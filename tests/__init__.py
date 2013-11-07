@@ -1,6 +1,7 @@
 # package is named tests, not test, so it won't be confused with test in stdlib
 from __future__ import print_function
 
+import contextlib
 import errno
 import os
 try:
@@ -20,9 +21,27 @@ from eventlet import debug, hubs, tpool
 # convenience for importers
 main = unittest.main
 
+
+@contextlib.contextmanager
+def assert_raises(exc_type):
+    ok = False
+    try:
+        yield
+    except exc_type:
+        ok = True
+    if not ok:
+        name = str(exc_type)
+        try:
+            name = exc_type.__name__
+        except AttributeError:
+            pass
+        assert False, 'Expected exception {0}'.format(name)
+
+
 def s2b(s):
     """portable way to convert string to bytes. In 3.x socket.send and recv require bytes"""
     return s.encode()
+
 
 def skipped(func):
     """ Decorator that marks a function as skipped.  Uses nose's SkipTest exception
