@@ -13,6 +13,9 @@ import warnings
 
 __all__ = ['GreenSocket', 'GreenPipe', 'shutdown_safe']
 
+# not all OSes implement truncate
+_FILE_HAS_TRUNCATE = bool(getattr(open(__file__), "truncate", None))
+
 CONNECT_ERR = set((errno.EINPROGRESS, errno.EALREADY, errno.EWOULDBLOCK))
 CONNECT_SUCCESS = set((0, errno.EISCONN))
 if sys.platform[:3] == "win":
@@ -23,6 +26,15 @@ if six.PY3:
     _fileobject = socket.SocketIO
 elif six.PY2:
     _fileobject = socket._fileobject
+
+try:
+    _makefile = socket._fileobject
+except AttributeError:
+    class _fileobject(object):
+        pass
+
+    def _makefile(sock, *args, **kwargs):
+        return _original_socket.makefile(sock, *args, **kwargs)
 
 
 def socket_connect(descriptor, address):
@@ -232,7 +244,7 @@ class GreenSocket(object):
 
     def makefile(self, *args, **kw):
         dupped = self.dup()
-        res = _fileobject(dupped, *args, **kw)
+        res = _makefile(dupped, *args, **kw)
         if hasattr(dupped, "_drop"):
             dupped._drop()
         return res
@@ -511,7 +523,7 @@ class GreenPipe(_fileobject):
             self._clear_readahead_buf()
             return rv
 
-    if getattr(file, "truncate", None): # not all OSes implement truncate
+    if _FILE_HAS_TRUNCATE:
         def truncate(self, size=-1):
             self.flush()
             if size == -1:
