@@ -293,13 +293,17 @@ def get_database_auth():
     return retval
 
 
-def run_python(path):
+def run_python(path, env=None):
     if not path.endswith('.py'):
         path += '.py'
     path = os.path.abspath(path)
     dir_ = os.path.dirname(path)
+
     new_env = os.environ.copy()
     new_env['PYTHONPATH'] = os.pathsep.join(sys.path + [dir_])
+    if env:
+        new_env.update(env)
+
     p = subprocess.Popen(
         [sys.executable, path],
         env=new_env,
@@ -308,7 +312,7 @@ def run_python(path):
         stdout=subprocess.PIPE,
     )
     output, _ = p.communicate()
-    return output
+    return output.decode('utf-8', 'replace')
 
 
 certificate_file = os.path.join(os.path.dirname(__file__), 'test_server.crt')
