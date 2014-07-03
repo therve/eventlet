@@ -1,3 +1,7 @@
+0.15
+====
+* hubs: drop Twisted support
+
 0.14
 ====
 * wsgi: handle connection socket timeouts; Thanks to Paul Oppenheim
